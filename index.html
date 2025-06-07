@@ -161,9 +161,6 @@
             }
             ding.currentTime = 0;
             ding.play();
-            // säkerställ att bakgrundsmusiken fortsätter
-            if (musicEnabled && bgm.paused) {
-                bgm.play().catch(() => {});
             }
             if (speakEnabled) {
                 const la = new Audio(`audio/${letter}.mp3`);
