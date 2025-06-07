@@ -153,12 +153,13 @@
             if (!speakEnabled) {
                 ding.currentTime = 0;
                 ding.play();
-            }
-            if (speakEnabled) {
+            } else {
                 const la = new Audio(`audio/${letter}.mp3`);
-                la.onended = ()=>{ new Audio(`audio/${num}.mp3`).play(); };
+                la.onended = () => { new Audio(`audio/${num}.mp3`).play(); };
                 la.play();
             }
+            // Se till att bakgrundsmusiken alltid är igång
+            bgm.play().catch(() => {});
         }
 
         function getLetter(n) { return n<=15?'B':n<=30?'I':n<=45?'N':n<=60?'G':'O'; }
