@@ -33,18 +33,14 @@
         <div id="settings">
             <label for="playerCount">Antal spelare (brickor): </label>
             <select id="playerCount">
-                <option value="0">0</option>
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-                <option value="5">5</option>
+                <option value="0">0</option><option value="1">1</option><option value="2">2</option>
+                <option value="3">3</option><option value="4">4</option><option value="5">5</option>
             </select>
         </div>
         <button id="startBtn">Starta</button>
         <button id="bingoBtn">BINGO</button>
+        <button id="toggleSpeakBtn">Tal: Av</button>
         <button id="resetBtn">Återställ</button>
-        <label><input type="checkbox" id="speakToggle"> Spela upp tal</label>
     </div>
     <div id="current">
         <div id="current-letter">-</div>
@@ -54,10 +50,6 @@
     <div id="cards"></div>
     <div id="winner"></div>
 
-    <!-- Placera alla mp3-filer i mappen 'audio':
-     B.mp3, I.mp3, N.mp3, G.mp3, O.mp3,
-     1.mp3 - 75.mp3,
-     background.mp3, ding.mp3, bingo.mp3 -->
     <audio id="bgm" src="audio/background.mp3" loop></audio>
     <audio id="ding" src="audio/ding.mp3"></audio>
     <audio id="bingoSound" src="audio/bingo.mp3"></audio>
@@ -65,13 +57,14 @@
     <script>
         const ranges = { B:{start:1,end:15},I:{start:16,end:30},N:{start:31,end:45},G:{start:46,end:60},O:{start:61,end:75} };
         const numbers = Array.from({length:75},(_,i)=>i+1);
-        let remaining=[], drawn=[], intervalId=null;
+        let remaining=[], drawn=[], intervalId=null, speakEnabled=false;
         const playerCountSelect=document.getElementById('playerCount');
         const currentLetterEl=document.getElementById('current-letter');
         const currentNumberEl=document.getElementById('current-number');
         const historyEl=document.getElementById('history');
         const startBtn=document.getElementById('startBtn');
         const bingoBtn=document.getElementById('bingoBtn');
+        const toggleSpeakBtn=document.getElementById('toggleSpeakBtn');
         const resetBtn=document.getElementById('resetBtn');
         const cardsContainer=document.getElementById('cards');
         const winnerEl=document.getElementById('winner');
@@ -80,38 +73,19 @@
         const bingoSound=document.getElementById('bingoSound');
 
         playerCountSelect.addEventListener('change',()=>{generateCards(parseInt(playerCountSelect.value));resetGame();});
+        toggleSpeakBtn.addEventListener('click',()=>{speakEnabled=!speakEnabled;toggleSpeakBtn.textContent=`Tal: ${speakEnabled?'På':'Av'}`;});
         window.addEventListener('load',()=>{generateCards(parseInt(playerCountSelect.value));bgm.volume=0.3;bgm.play().catch(()=>{});});
 
         function resetGame(){stopGame();remaining=[...numbers];drawn=[];currentLetterEl.textContent='-';currentNumberEl.textContent='';historyEl.textContent='';winnerEl.textContent='';generateCards(parseInt(playerCountSelect.value));}
-
-        function generateCards(count){cardsContainer.innerHTML='';for(let i=0;i<count;i++){const card=document.createElement('div');card.classList.add('card');const title=document.createElement('div');title.classList.add('card-title');title.textContent=`Bricka ${i+1}`;card.appendChild(title);const table=document.createElement('table');const headerRow=document.createElement('tr');Object.keys(ranges).forEach(letter=>{const th=document.createElement('th');th.textContent=letter;headerRow.appendChild(th);});table.appendChild(headerRow);const cols={};Object.keys(ranges).forEach(letter=>{const {start,end}=ranges[letter];const arr=[];for(let n=start;n<=end;n++)arr.push(n);shuffleArray(arr);cols[letter]=arr;});for(let row=0;row<15;row++){const tr=document.createElement('tr');Object.keys(ranges).forEach(letter=>{const td=document.createElement('td');td.textContent=cols[letter][row];tr.appendChild(td);});table.appendChild(tr);}card.appendChild(table);cardsContainer.appendChild(card);} }
+        function generateCards(count){cardsContainer.innerHTML='';for(let i=0;i<count;i++){const card=document.createElement('div');card.classList.add('card');const title=document.createElement('div');title.classList.add('card-title');title.textContent=`Bricka ${i+1}`;card.appendChild(title);const table=document.createElement('table');const header=document.createElement('tr');Object.keys(ranges).forEach(letter=>{const th=document.createElement('th');th.textContent=letter;header.appendChild(th);});table.appendChild(header);const cols={};Object.keys(ranges).forEach(letter=>{const {start,end}=ranges[letter],arr=[];for(let n=start;n<=end;n++)arr.push(n);shuffleArray(arr);cols[letter]=arr;});for(let r=0;r<15;r++){const tr=document.createElement('tr');Object.keys(ranges).forEach(letter=>{const td=document.createElement('td');td.textContent=cols[letter][r];tr.appendChild(td);});table.appendChild(tr);}card.appendChild(table);cardsContainer.appendChild(card);} }
         function shuffleArray(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}}
-
-        function markNumberOnCards(num){const cards=cardsContainer.querySelectorAll('.card');cards.forEach(card=>{const rows=card.querySelectorAll('table tr');rows.forEach((row,rIdx)=>{if(rIdx===0)return;const cells=row.querySelectorAll('td');cells.forEach(cell=>{if(parseInt(cell.textContent)===num){cell.classList.add('marked');}});});});}
-
-        function checkBingo(){const cards=cardsContainer.querySelectorAll('.card');for(let i=0;i<cards.length;i++){const rows=cards[i].querySelectorAll('table tr');for(let r=1;r<rows.length;r++){const cells=rows[r].querySelectorAll('td');let full=true;cells.forEach(c=>{if(!c.classList.contains('marked'))full=false;});if(full)return {cardIdx:i,rowIdx:r};}}return null;}
-        function highlightCompleted(ci,ri){const row=cardsContainer.querySelectorAll('.card')[ci].querySelectorAll('table tr')[ri];row.querySelectorAll('td').forEach(c=>c.classList.add('completed'));}
-
-        function getLetter(num){if(num<=15)return'B';if(num<=30)return'I';if(num<=45)return'N';if(num<=60)return'G';return'O';}
-
-        function drawNumber(){if(!remaining.length){stopGame();currentLetterEl.textContent='K';currentNumberEl.textContent='lart!';return;}const idx=Math.floor(Math.random()*remaining.length);const num=remaining.splice(idx,1)[0];drawn.push(num);const letter=getLetter(num);currentLetterEl.textContent=letter;currentNumberEl.textContent=num;if(parseInt(playerCountSelect.value)===0)historyEl.textContent='Dragna siffror: '+drawn.join(', ');if(parseInt(playerCountSelect.value)>0){markNumberOnCards(num);const res=checkBingo();if(res){highlightCompleted(res.cardIdx,res.rowIdx);stopGame();bingoSound.currentTime=0;bingoSound.play();winnerEl.textContent=`BINGO! Bricka ${res.cardIdx+1} vann!`;return;}}ding.currentTime=0;ding.currentTime = 0;
-            ding.play();
-            // Automatisk taluppspelning om valt
-            if (document.getElementById('speakToggle').checked) {
-                const letterAudio = new Audio(`audio/${letter}.mp3`);
-                letterAudio.addEventListener('ended', () => {
-                    const numberAudio = new Audio(`audio/${num}.mp3`);
-                    numberAudio.play();
-                });
-                letterAudio.play();
-            }// Automatisk uppspelning
-            const audioL=new Audio(`audio/${letter}.mp3`);
-            audioL.addEventListener('ended',()=>{new Audio(`audio/${num}.mp3`).play();});
-            audioL.play();
-        }
-
-        function startGame(){if(intervalId)return;resetGame();if(bgm.paused)bgm.play();const cnt=parseInt(playerCountSelect.value);const delay=cnt===0?10000:5000;drawNumber();intervalId=setInterval(drawNumber,delay);}
-        function stopGame(){if(intervalId){clearInterval(intervalId);intervalId=null;}}
+        function markNumberOnCards(num){cardsContainer.querySelectorAll('.card').forEach(card=>{card.querySelectorAll('table tr').forEach((row,ri)=>{if(ri>0)row.querySelectorAll('td').forEach(cell=>{if(parseInt(cell.textContent)===num)cell.classList.add('marked');});});});}
+        function checkBingo(){const cards=cardsContainer.querySelectorAll('.card');for(let i=0;i<cards.length;i++){const rows=cards[i].querySelectorAll('table tr');for(let r=1;r<rows.length;r++){const cells=rows[r].querySelectorAll('td'),full=cells.every(c=>c.classList.contains('marked'));if(full)return{x:i,y:r};}}return null;}
+        function highlightCompleted(ci,ri){const cells=cardsContainer.querySelectorAll('.card')[ci].querySelectorAll('table tr')[ri].querySelectorAll('td');cells.forEach(c=>c.classList.add('completed'));}
+        function getLetter(num){return num<=15?'B':num<=30?'I':num<=45?'N':num<=60?'G':'O';}
+        function drawNumber(){if(!remaining.length){stopGame();currentLetterEl.textContent='K';currentNumberEl.textContent='lart!';return;}const idx=Math.floor(Math.random()*remaining.length),num=remaining.splice(idx,1)[0];drawn.push(num);const letter=getLetter(num);currentLetterEl.textContent=letter;currentNumberEl.textContent=num;if(parseInt(playerCountSelect.value)===0)historyEl.textContent='Dragna siffror: '+drawn.join(', ');if(parseInt(playerCountSelect.value)>0){markNumberOnCards(num);const res=checkBingo();if(res){highlightCompleted(res.x,res.y);stopGame();bingoSound.currentTime=0;bingoSound.play();winnerEl.textContent=`BINGO! Bricka ${res.x+1} vann!`;return;}}ding.currentTime=0;ding.play();if(speakEnabled){const la=new Audio(`audio/${letter}.mp3`);la.addEventListener('ended',()=>new Audio(`audio/${num}.mp3`).play());la.play();}}
+        function startGame(){if(intervalId)return;resetGame();if(bgm.paused)bgm.play();const d=parseInt(playerCountSelect.value)===0?10000:5000;drawNumber();intervalId=setInterval(drawNumber,d);}        
+        function stopGame(){if(intervalId){clearInterval(intervalId);intervalId=null;}}        
         startBtn.addEventListener('click',startGame);
         bingoBtn.addEventListener('click',()=>{stopGame();bingoSound.currentTime=0;bingoSound.play();winnerEl.textContent='BINGO!';});
         resetBtn.addEventListener('click',resetGame);
