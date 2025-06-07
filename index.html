@@ -43,7 +43,6 @@
         <button id="toggleMusicBtn">Musik: På</button>
         <button id="resetBtn">Återställ</button>
     </div>
-
     <div id="current">
         <div id="current-letter">-</div>
         <div id="current-number"></div>
@@ -157,11 +156,9 @@
             if (parseInt(playerCountSelect.value)>0) {
                 markCards(num);
                 const win = checkBingo();
-                if (win) { highlight(win); stopGame(); bingoSound.currentTime=0; musicEnabled && bingoSound.play(); winnerEl.textContent = `BINGO! Bricka ${win.card+1} vann!`; return; }
+                if (win) { highlight(win); stopGame(); if(musicEnabled){bingoSound.currentTime=0;bingoSound.play();} winnerEl.textContent = `BINGO! Bricka ${win.card+1} vann!`; return; }
             }
-            ding.currentTime = 0;
-            ding.play();
-            }
+            ding.currentTime=0; ding.play();
             if (speakEnabled) {
                 const la = new Audio(`audio/${letter}.mp3`);
                 la.onended = ()=>{ new Audio(`audio/${num}.mp3`).play(); };
@@ -175,7 +172,7 @@
         function highlight({card,row}){ Array.from(cardsContainer.querySelectorAll('.card')[card].querySelectorAll('tr')[row].querySelectorAll('td')).forEach(td=>td.classList.add('completed')); }
 
         startBtn.addEventListener('click', startGame);
-        bingoBtn.addEventListener('click', ()=>{ stopGame(); bingoSound.currentTime=0; musicEnabled && bingoSound.play(); winnerEl.textContent='BINGO!'; });
+        bingoBtn.addEventListener('click', ()=>{ stopGame(); if(musicEnabled){ bingoSound.currentTime=0; bingoSound.play(); } winnerEl.textContent='BINGO!'; });
         resetBtn.addEventListener('click', resetGame);
         resetGame();
     </script>
