@@ -6,35 +6,39 @@
     <title>Nico & Neo Bingo</title>
     <style>
         body { font-family: Arial, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; background: #f0f0f0; }
-        #controls { margin-bottom: 20px; display: flex; align-items: center; gap: 20px; }
-        #settings { display: flex; align-items: center; gap: 10px; }
-        #settings label, #settings select { font-size: 18px; }
-        #title { font-size: 24px; font-weight: bold; }
-        button { font-size: 20px; padding: 10px 20px; cursor: pointer; border: none; border-radius: 5px; background: #007bff; color: #fff; transition: background 0.3s; }
+        #controls { margin-bottom: 20px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        #settings { display: flex; align-items: center; gap: 5px; }
+        #settings label, #settings select { font-size: 16px; }
+        #title { font-size: 20px; font-weight: bold; }
+        button { font-size: 16px; padding: 8px 12px; cursor: pointer; border: none; border-radius: 5px; background: #007bff; color: #fff; transition: background 0.3s; }
         button:hover { background: #0056b3; }
         #current { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-        #current-letter { font-size: 120px; font-weight: bold; color: red; line-height: 1; }
-        #current-number { font-size: 80px; font-weight: bold; line-height: 1; }
-        #history { margin-bottom: 20px; font-size: 80px; text-align: center; }
-        #cards { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; margin-bottom: 20px; }
-        .card { background: #fff; border: 2px solid #007bff; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; align-items: center; transform: scale(0.6); transform-origin: top left; }
-        .card-title { font-size: 20px; font-weight: bold; text-align: center; margin-bottom: 10px; }
+        #current-letter { font-size: 80px; font-weight: bold; color: red; line-height: 1; }
+        #current-number { font-size: 50px; font-weight: bold; line-height: 1; }
+        #history { margin-bottom: 20px; font-size: 18px; text-align: center; }
+        #cards { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-bottom: 20px; }
+        .card { background: #fff; border: 2px solid #007bff; border-radius: 8px; padding: 5px; transform: scale(0.6); transform-origin: top left; }
+        .card-title { font-size: 14px; font-weight: bold; margin-bottom: 5px; text-align: center; }
         .card table { border-collapse: collapse; }
-        .card th, .card td { border: 1px solid #ccc; width: 32px; height: 32px; text-align: center; vertical-align: middle; font-size: 14px; padding: 2px; }
-        .card th { background: #007bff; color: #fff; font-size: 16px; }
-        .marked { background: #ffeb3b; color: #000; font-weight: bold; }
-        .completed { background: #00ff00; color: #000; font-weight: bold; }
-        #winner { font-size: 36px; font-weight: bold; color: #d9534f; margin-bottom: 20px; }
+        .card th, .card td { border: 1px solid #ccc; width: 28px; height: 28px; text-align: center; vertical-align: middle; font-size: 12px; padding: 1px; }
+        .card th { background: #007bff; color: #fff; font-size: 12px; }
+        .marked { background: #ffeb3b; }
+        .completed { background: #00ff00; }
+        #winner { font-size: 24px; font-weight: bold; color: #d9534f; margin-top: 10px; }
     </style>
 </head>
 <body>
     <div id="controls">
         <div id="title">Nico & Neo Bingo</div>
         <div id="settings">
-            <label for="playerCount">Antal spelare (brickor): </label>
+            <label for="playerCount">Spelare:</label>
             <select id="playerCount">
-                <option value="0">0</option><option value="1">1</option><option value="2">2</option>
-                <option value="3">3</option><option value="4">4</option><option value="5">5</option>
+                <option value="0">0</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
             </select>
         </div>
         <button id="startBtn">Starta</button>
@@ -42,6 +46,7 @@
         <button id="toggleSpeakBtn">Tal: Av</button>
         <button id="resetBtn">Återställ</button>
     </div>
+
     <div id="current">
         <div id="current-letter">-</div>
         <div id="current-number"></div>
@@ -55,40 +60,120 @@
     <audio id="bingoSound" src="audio/bingo.mp3"></audio>
 
     <script>
-        const ranges = { B:{start:1,end:15},I:{start:16,end:30},N:{start:31,end:45},G:{start:46,end:60},O:{start:61,end:75} };
-        const numbers = Array.from({length:75},(_,i)=>i+1);
-        let remaining=[], drawn=[], intervalId=null, speakEnabled=false;
-        const playerCountSelect=document.getElementById('playerCount');
-        const currentLetterEl=document.getElementById('current-letter');
-        const currentNumberEl=document.getElementById('current-number');
-        const historyEl=document.getElementById('history');
-        const startBtn=document.getElementById('startBtn');
-        const bingoBtn=document.getElementById('bingoBtn');
-        const toggleSpeakBtn=document.getElementById('toggleSpeakBtn');
-        const resetBtn=document.getElementById('resetBtn');
-        const cardsContainer=document.getElementById('cards');
-        const winnerEl=document.getElementById('winner');
-        const bgm=document.getElementById('bgm');
-        const ding=document.getElementById('ding');
-        const bingoSound=document.getElementById('bingoSound');
+        const ranges = { B:[1,15], I:[16,30], N:[31,45], G:[46,60], O:[61,75] };
+        const numbers = Array.from({ length: 75 }, (_, i) => i + 1);
+        let remaining = [], drawn = [], intervalId = null, speakEnabled = false;
 
-        playerCountSelect.addEventListener('change',()=>{generateCards(parseInt(playerCountSelect.value));resetGame();});
-        toggleSpeakBtn.addEventListener('click',()=>{speakEnabled=!speakEnabled;toggleSpeakBtn.textContent=`Tal: ${speakEnabled?'På':'Av'}`;});
-        window.addEventListener('load',()=>{generateCards(parseInt(playerCountSelect.value));bgm.volume=0.3;bgm.play().catch(()=>{});});
+        const playerCountSelect = document.getElementById('playerCount');
+        const startBtn = document.getElementById('startBtn');
+        const bingoBtn = document.getElementById('bingoBtn');
+        const toggleSpeakBtn = document.getElementById('toggleSpeakBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const currentLetterEl = document.getElementById('current-letter');
+        const currentNumberEl = document.getElementById('current-number');
+        const historyEl = document.getElementById('history');
+        const cardsContainer = document.getElementById('cards');
+        const winnerEl = document.getElementById('winner');
+        const bgm = document.getElementById('bgm');
+        const ding = document.getElementById('ding');
+        const bingoSound = document.getElementById('bingoSound');
 
-        function resetGame(){stopGame();remaining=[...numbers];drawn=[];currentLetterEl.textContent='-';currentNumberEl.textContent='';historyEl.textContent='';winnerEl.textContent='';generateCards(parseInt(playerCountSelect.value));}
-        function generateCards(count){cardsContainer.innerHTML='';for(let i=0;i<count;i++){const card=document.createElement('div');card.classList.add('card');const title=document.createElement('div');title.classList.add('card-title');title.textContent=`Bricka ${i+1}`;card.appendChild(title);const table=document.createElement('table');const header=document.createElement('tr');Object.keys(ranges).forEach(letter=>{const th=document.createElement('th');th.textContent=letter;header.appendChild(th);});table.appendChild(header);const cols={};Object.keys(ranges).forEach(letter=>{const {start,end}=ranges[letter],arr=[];for(let n=start;n<=end;n++)arr.push(n);shuffleArray(arr);cols[letter]=arr;});for(let r=0;r<15;r++){const tr=document.createElement('tr');Object.keys(ranges).forEach(letter=>{const td=document.createElement('td');td.textContent=cols[letter][r];tr.appendChild(td);});table.appendChild(tr);}card.appendChild(table);cardsContainer.appendChild(card);} }
-        function shuffleArray(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}}
-        function markNumberOnCards(num){cardsContainer.querySelectorAll('.card').forEach(card=>{card.querySelectorAll('table tr').forEach((row,ri)=>{if(ri>0)row.querySelectorAll('td').forEach(cell=>{if(parseInt(cell.textContent)===num)cell.classList.add('marked');});});});}
-        function checkBingo(){const cards=cardsContainer.querySelectorAll('.card');for(let i=0;i<cards.length;i++){const rows=cards[i].querySelectorAll('table tr');for(let r=1;r<rows.length;r++){const cells=rows[r].querySelectorAll('td'),full=cells.every(c=>c.classList.contains('marked'));if(full)return{x:i,y:r};}}return null;}
-        function highlightCompleted(ci,ri){const cells=cardsContainer.querySelectorAll('.card')[ci].querySelectorAll('table tr')[ri].querySelectorAll('td');cells.forEach(c=>c.classList.add('completed'));}
-        function getLetter(num){return num<=15?'B':num<=30?'I':num<=45?'N':num<=60?'G':'O';}
-        function drawNumber(){if(!remaining.length){stopGame();currentLetterEl.textContent='K';currentNumberEl.textContent='lart!';return;}const idx=Math.floor(Math.random()*remaining.length),num=remaining.splice(idx,1)[0];drawn.push(num);const letter=getLetter(num);currentLetterEl.textContent=letter;currentNumberEl.textContent=num;if(parseInt(playerCountSelect.value)===0)historyEl.textContent='Dragna siffror: '+drawn.join(', ');if(parseInt(playerCountSelect.value)>0){markNumberOnCards(num);const res=checkBingo();if(res){highlightCompleted(res.x,res.y);stopGame();bingoSound.currentTime=0;bingoSound.play();winnerEl.textContent=`BINGO! Bricka ${res.x+1} vann!`;return;}}ding.currentTime=0;ding.play();if(speakEnabled){const la=new Audio(`audio/${letter}.mp3`);la.addEventListener('ended',()=>new Audio(`audio/${num}.mp3`).play());la.play();}}
-        function startGame(){if(intervalId)return;resetGame();if(bgm.paused)bgm.play();const d=parseInt(playerCountSelect.value)===0?10000:5000;drawNumber();intervalId=setInterval(drawNumber,d);}        
-        function stopGame(){if(intervalId){clearInterval(intervalId);intervalId=null;}}        
-        startBtn.addEventListener('click',startGame);
-        bingoBtn.addEventListener('click',()=>{stopGame();bingoSound.currentTime=0;bingoSound.play();winnerEl.textContent='BINGO!';});
-        resetBtn.addEventListener('click',resetGame);
+        playerCountSelect.addEventListener('change', () => { resetGame(); });
+        toggleSpeakBtn.addEventListener('click', () => {
+            speakEnabled = !speakEnabled;
+            toggleSpeakBtn.textContent = `Tal: ${speakEnabled ? 'På' : 'Av'}`;
+        });
+
+        window.addEventListener('load', () => {
+            bgm.volume = 0.3;
+            bgm.play().catch(() => {});
+            resetGame();
+        });
+
+        function resetGame() {
+            stopGame();
+            remaining = [...numbers];
+            drawn = [];
+            currentLetterEl.textContent = '-';
+            currentNumberEl.textContent = '';
+            historyEl.textContent = '';
+            winnerEl.textContent = '';
+            cardsContainer.innerHTML = '';
+            generateCards(parseInt(playerCountSelect.value));
+        }
+
+        function generateCards(count) {
+            for (let i = 0; i < count; i++) {
+                const cardDiv = document.createElement('div'); cardDiv.className = 'card';
+                const title = document.createElement('div'); title.className = 'card-title'; title.textContent = `Bricka ${i+1}`;
+                cardDiv.appendChild(title);
+                const table = document.createElement('table');
+                const header = document.createElement('tr');
+                ['B','I','N','G','O'].forEach(l => { const th = document.createElement('th'); th.textContent = l; header.appendChild(th); });
+                table.appendChild(header);
+                const cols = {};
+                Object.entries(ranges).forEach(([l, [s,e]]) => {
+                    const arr = [];
+                    for (let n=s; n<=e; n++) arr.push(n);
+                    shuffle(arr);
+                    cols[l] = arr;
+                });
+                for (let r=0; r<15; r++) {
+                    const tr = document.createElement('tr');
+                    Object.keys(ranges).forEach(l => {
+                        const td = document.createElement('td'); td.textContent = cols[l][r]; tr.appendChild(td);
+                    });
+                    table.appendChild(tr);
+                }
+                cardDiv.appendChild(table);
+                cardsContainer.appendChild(cardDiv);
+            }
+        }
+
+        function shuffle(a) { for (let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]];} }
+
+        function startGame() {
+            if (intervalId) return;
+            resetGame();
+            const delay = parseInt(playerCountSelect.value) === 0 ? 10000 : 5000;
+            drawNumber();
+            intervalId = setInterval(drawNumber, delay);
+        }
+
+        function stopGame() {
+            if (intervalId) { clearInterval(intervalId); intervalId=null; }
+        }
+
+        function drawNumber() {
+            if (remaining.length===0) { stopGame(); return; }
+            const idx = Math.floor(Math.random()*remaining.length);
+            const num = remaining.splice(idx,1)[0]; drawn.push(num);
+            const letter = getLetter(num);
+            currentLetterEl.textContent = letter;
+            currentNumberEl.textContent = num;
+            if (parseInt(playerCountSelect.value)===0) historyEl.textContent = 'Dragna: '+drawn.join(', ');
+            else {
+                markCards(num);
+                const win = checkBingo();
+                if (win) { highlight(win); stopGame(); bingoSound.currentTime=0; bingoSound.play(); winnerEl.textContent = `BINGO! Bricka ${win.card+1} vann!`; return; }
+            }
+            ding.currentTime=0; ding.play();
+            if (speakEnabled) {
+                const la = new Audio(`audio/${letter}.mp3`);
+                la.onended = ()=>{ new Audio(`audio/${num}.mp3`).play(); };
+                la.play();
+            }
+        }
+
+        function getLetter(n) { if(n<=15) return 'B'; if(n<=30) return 'I'; if(n<=45) return 'N'; if(n<=60) return 'G'; return 'O'; }
+        function markCards(n) { cardsContainer.querySelectorAll('.card').forEach(c=>{ c.querySelectorAll('td').forEach(td=>{ if(parseInt(td.textContent)===n) td.classList.add('marked'); }); }); }
+        function checkBingo(){ const cards = cardsContainer.querySelectorAll('.card'); for(let i=0;i<cards.length;i++){ const rows=cards[i].querySelectorAll('tr'); for(let r=1;r<rows.length;r++){ const cells=rows[r].querySelectorAll('td'); if(Array.from(cells).every(td=>td.classList.contains('marked'))) return {card:i,row:r}; }} return null; }
+        function highlight({card,row}){ Array.from(cardsContainer.querySelectorAll('.card')[card].querySelectorAll('tr')[row].querySelectorAll('td')).forEach(td=>td.classList.add('completed')); }
+
+        startBtn.addEventListener('click', startGame);
+        bingoBtn.addEventListener('click', ()=>{ stopGame(); bingoSound.currentTime=0; bingoSound.play(); winnerEl.textContent='BINGO!'; });
+        resetBtn.addEventListener('click', resetGame);
+        // Init
         resetGame();
     </script>
 </body>
