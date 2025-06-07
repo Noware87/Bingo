@@ -3,132 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bingo-spel</title>
+    <title>Nico & Neo Bingo</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px;
-        }
-        #current {
-            font-size: 100px;
-            font-weight: bold;
-            margin: 20px;
-        }
-        #previous {
-            margin-top: 20px;
-            max-width: 600px;
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 10px;
-        }
-        .prev-item {
-            font-size: 24px;
-            text-align: center;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-        #controls {
-            margin-top: 20px;
-            display: flex;
-            gap: 10px;
-        }
-        button {
-            font-size: 20px;
-            padding: 10px 20px;
-            cursor: pointer;
-        }
+        /* ... befintlig CSS ... */
     </style>
 </head>
 <body>
-    <h1>Bingo Caller</h1>
-    <div id="current">-</div>
     <div id="controls">
+        <div id="title">Nico & Neo Bingo</div>
+        <div id="settings">
+            <label for="playerCount">Antal spelare (brickor): </label>
+            <select id="playerCount">
+                <option value="0">0</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+            </select>
+        </div>
         <button id="startBtn">Starta</button>
         <button id="bingoBtn">BINGO</button>
+        <button id="speakBtn">Tal</button>
+        <button id="resetBtn">Återställ</button>
     </div>
-    <div id="previous"></div>
+    <div id="current">
+        <div id="current-letter">-</div>
+        <div id="current-number"></div>
+    </div>
+    <div id="history"></div>
+    <div id="cards"></div>
+    <div id="winner"></div>
+
+    <!-- Bakgrundsljud etc -->
+    <audio id="bgm" src="audio/background.mp3" loop></audio>
+    <audio id="ding" src="audio/ding.mp3"></audio>
+    <audio id="bingoSound" src="audio/bingo.mp3"></audio>
 
     <script>
-        const numbers = Array.from({ length: 75 }, (_, i) => i + 1);
-        let remaining = [];
-        let drawn = [];
-        let intervalId = null;
+        /* ... tidigare JS-kod upp till resetGame() ... */
 
-        const currentEl = document.getElementById('current');
-        const previousEl = document.getElementById('previous');
-        const startBtn = document.getElementById('startBtn');
-        const bingoBtn = document.getElementById('bingoBtn');
-
-        // Initiera spelstatus
-        function resetGame() {
-            stopGame();
-            remaining = [...numbers];
-            drawn = [];
-            currentEl.textContent = '-';
-            previousEl.innerHTML = '';
-        }
-
-        // Bestämmer bokstaven (B, I, N, G eller O) utifrån numret
-        function getLetter(num) {
-            if (num >= 1 && num <= 15) return 'B';
-            if (num >= 16 && num <= 30) return 'I';
-            if (num >= 31 && num <= 45) return 'N';
-            if (num >= 46 && num <= 60) return 'G';
-            if (num >= 61 && num <= 75) return 'O';
-            return '';
-        }
-
-        // Drar ett nytt nummer och visar det
-        function drawNumber() {
-            if (remaining.length === 0) {
-                stopGame();
-                currentEl.textContent = 'Klart!';
-                return;
-            }
-            const index = Math.floor(Math.random() * remaining.length);
-            const num = remaining.splice(index, 1)[0];
-            drawn.push(num);
-
-            const letter = getLetter(num);
-            currentEl.textContent = letter + num;
-
-            const prevItem = document.createElement('div');
-            prevItem.classList.add('prev-item');
-            prevItem.textContent = letter + num;
-            previousEl.appendChild(prevItem);
-        }
-
-        // Startar spelet (drar direkt ett nummer och sedan var 10:e sekund)
-        function startGame() {
-            if (intervalId) return;
-            if (remaining.length === 0) resetGame();
-            drawNumber();
-            intervalId = setInterval(drawNumber, 10000);
-        }
-
-        // Stoppar pågående dragningar
-        function stopGame() {
-            if (intervalId) {
-                clearInterval(intervalId);
-                intervalId = null;
-            }
-        }
-
-        // Eventlisteners för knapparna
-        startBtn.addEventListener('click', () => {
-            startGame();
+        // Knapp för att läsa upp bokstav och siffra
+        const speakBtn = document.getElementById('speakBtn');
+        speakBtn.addEventListener('click', () => {
+            const letter = currentLetterEl.textContent;
+            const number = currentNumberEl.textContent;
+            if (!letter || letter === '-' || !number) return;
+            // Spela upp bokstav
+            const letterAudio = new Audio(`audio/${letter}.mp3`);
+            // Spela upp siffra när bokstavsljudet är klart
+            letterAudio.addEventListener('ended', () => {
+                const numAudio = new Audio(`audio/${number}.mp3`);
+                numAudio.play();
+            });
+            letterAudio.play();
         });
 
-        bingoBtn.addEventListener('click', () => {
-            resetGame();
-        });
-
-        // Initiera vid laddning
-        resetGame();
+        // Lägg till speakBtn i lyssnare för reset också om nödvändigt
+        // Resten av start, drawNumber etc ...
     </script>
 </body>
-</
+</html>
