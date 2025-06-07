@@ -159,7 +159,12 @@
                 const win = checkBingo();
                 if (win) { highlight(win); stopGame(); bingoSound.currentTime=0; musicEnabled && bingoSound.play(); winnerEl.textContent = `BINGO! Bricka ${win.card+1} vann!`; return; }
             }
-            ding.currentTime=0; ding.play();
+            ding.currentTime = 0;
+            ding.play();
+            // säkerställ att bakgrundsmusiken fortsätter
+            if (musicEnabled && bgm.paused) {
+                bgm.play().catch(() => {});
+            }
             if (speakEnabled) {
                 const la = new Audio(`audio/${letter}.mp3`);
                 la.onended = ()=>{ new Audio(`audio/${num}.mp3`).play(); };
